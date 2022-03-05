@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/martinlindhe/notify"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,20 +16,23 @@ var url = ""
 var latestAnswer = ""
 
 func main() {
+	log.SetFormatter(&log.TextFormatter{ForceColors: true})
+
 	fmt.Println()
 	fmt.Println("le funny webhook checker changer for pastebin :trol:")
 	fmt.Println("~bruhitsalex")
 	fmt.Println()
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter pastebin URL: ")
+	log.Info("Enter pastebin URL: ")
 
 	text, _ := reader.ReadString('\n')
 	url = strings.TrimSuffix(strings.TrimSuffix(text, "\n"), "\r")
 	latestAnswer = getCurrentWebhook()
 
 	fmt.Println()
-	fmt.Println("Current content is '" + latestAnswer + "'")
-	fmt.Println("Will now automatically refresh...")
+	log.Info("Current content is: ")
+	log.Info(latestAnswer)
+	log.Info("Will now automatically refresh...")
 
 	for range time.Tick(time.Minute * 2) {
 		go func() {
@@ -43,7 +47,8 @@ func checkAnswer() {
 		latestAnswer = result
 		notify.Notify("Pastebin Checker", "Content Change", latestAnswer, "")
 		fmt.Println()
-		fmt.Println("Answer changed: " + latestAnswer)
+		log.Warning("Answer changed:")
+		log.Info(latestAnswer)
 		if strings.Contains(latestAnswer, "discord.com/api/webhooks") {
 			deleteAnswer()
 		}
@@ -67,13 +72,13 @@ func deleteAnswer() {
 
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("Deleted webhook: " + string(respBody))
+	log.Info("Deleted webhook [" + resp.Status + "]")
 }
 
 func getCurrentWebhook() string {
